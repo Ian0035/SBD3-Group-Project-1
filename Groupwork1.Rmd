@@ -124,11 +124,10 @@ ggplot(df, aes(x = gender, y = wage)) +
 ```
 Gender includes Female, Male, Prefer not to say, and Prefer to self-describe. The difference between the median of all these is very minor, so you might think we could let this variable out. But if we look closer, per industry for example, we see that females on average earn a lot more than males, if we would let the feature gender go and we would try to predict a female or male for the industry broadcasting, it would give a very wrong answer. So even though it might not be ethical, we do have to leave the feature in.
 
+
 Convert categorical variables to factors:
 
 Categorical variables are converted to factors to prepare them for modeling.
-
-
 ```{r factor-conversion}
 df$gender <- as.factor(df$gender)
 df$education <- as.factor(df$education)
@@ -141,20 +140,30 @@ df$For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.scho
 df$How.long.have.you.been.writing.code.to.analyze.data. <- as.factor(df$How.long.have.you.been.writing.code.to.analyze.data.)
 ```
 
-# 4. Feature Selection and Dummy Encoding
+# 4. Feature Selection
 
-We select key predictors and apply dummy encoding to convert categorical features to numeric format for ML modeling.
+We select key predictors and that we think are important for our model to predict the right wage.
 
-```{r dummy-encoding}
+```{r Feature Selection}
 model_data <- df %>% 
   select(wage, age, years_experience, education, gender, country, job_role, industry, How.long.have.you.been.writing.code.to.analyze.data., For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school..)
+
+```
+
+# 5. Dummy Encoding
+
+We apply dummy encoding to convert categorical features to numeric format for autoML modeling.
+
+```{r dummy-encoding}
 
 dummy_model <- caret::dummyVars(~ ., data = model_data[,-1])
 dummy_data <- predict(dummy_model, newdata = model_data[,-1])
 model_matrix <- data.frame(wage = model_data$wage, dummy_data)
 ```
 
-# 5. Train-Test Split
+# 6. Train-Test Split
+
+We split the data into training and testing sets to evaluate model generalization.
 
 ```{r train-test-split}
 set.seed(123)
@@ -163,7 +172,9 @@ train_data <- model_matrix[train_index, ]
 test_data  <- model_matrix[-train_index, ]
 ```
 
-# 6. AutoML with H2O
+# 7. AutoML with H2O
+
+We use H2O’s AutoML to automatically train and tune multiple models. XGBoost is excluded due to compatibility issues with windows.
 
 ```{r automl}
 h2o.init()
@@ -196,7 +207,9 @@ best_model <- automl@leader
 print(best_model)
 ```
 
-Evaluate the best model:
+##Model Evaluation
+
+We extract the best model by RMSE and evaluate its performance on the validation set.
 
 ```{r automl-eval}
 best_rmse <- h2o.get_best_model(automl, criterion = "RMSE")
@@ -230,7 +243,9 @@ pred_df <- as.data.frame(h2o.cbind(pred_best_rmse, valid$wage))
 colnames(pred_df) <- c("predicted", "actual")
 ```
 
-Plot residuals and predicted vs actual values:
+##Plot residuals and predicted vs actual values:
+
+We visualize how well the model predicted wages using residual and prediction plots.
 
 ```{r automl-plots, fig.width=6, fig.height=4}
 # Residual plot
@@ -246,7 +261,9 @@ ggplot(pred_df, aes(x = actual, y = predicted)) +
   labs(title = "Predicted vs. Actual Wage", x = "Actual Wage", y = "Predicted Wage")
 ```
 
-# 6.2. AutoML Explainability
+# 7.2. AutoML Explainability
+
+We use H2O’s built-in tools to explore variable importance and local explanations.
 
 ```{r automl-explain}
 exp_automl <- h2o.explain(automl, valid)
@@ -261,7 +278,10 @@ print(exp_GBM)
 h2o.varimp_plot(GBM_rsme)
 ```
 
-# 7. Random Forest Model Development
+# 8. Random Forest Model Development
+
+We build a traditional Random Forest for comparison.
+
 
 ```{r rf-model}
 set.seed(123)
@@ -269,7 +289,9 @@ rf_model <- randomForest(wage ~ ., data = train_data, importance = TRUE)
 print(rf_model)
 ```
 
-# 8. Model Evaluation
+# 9. Model Evaluation
+
+We evaluate the Random Forest model using RMSE and R² on the test set.
 
 ```{r rf-eval}
 predictions <- predict(rf_model, test_data)
@@ -282,7 +304,9 @@ cat("Test R-squared:", rsq_value, "
 ")
 ```
 
-# 9. Explainability: Feature Importance & Partial Dependence
+# 10. Explainability: Feature Importance & Partial Dependence
+
+We visualize feature importance and partial dependence of wages on experience.
 
 ```{r rf-explain}
 importance_values <- importance(rf_model)
@@ -294,7 +318,9 @@ plotPartial(pdp_experience, main = "Partial Dependence of Wage on Years of Exper
             xlab = "Years of Experience", ylab = "Predicted Wage")
 ```
 
-# 10. Real-world Application: Predicting Team Member Wages
+# 11. Real-world Application: Predicting Team Member Wages
+
+We use the trained model to predict the wages of team members based on their profile.
 
 ```{r predict-team}
 team_raw <- data.frame(
@@ -315,7 +341,9 @@ team_matrix$predicted_wage <- predict(rf_model, newdata = team_matrix)
 team_matrix[, c("age", "years_experience", "education", "gender", "country", "job_role", "industry", "predicted_wage")]
 ```
 
-# 11. Save Model and Results
+# 12. Save Model and Results
+
+Optionally, you can persist your model and predictions for deployment or future reuse. As retraining the model takes a long time.
 
 ```{r save-results, eval=FALSE}
 save(rf_model, file = "rf_wage_model.RData")
