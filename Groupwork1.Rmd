@@ -1,6 +1,6 @@
 ---
 title: "Wage Prediction Using Machine Learning and AutoML"
-author: "Your Name"
+author: "Feuz Dana Livia, Hoogstrate Ian, Kuchen Rahel, Vandecruys Piet"
 output: html_document
 ---
 
@@ -78,7 +78,7 @@ df$outlier_flag <- with(df,
                         (wage > 100000 & (years_experience %in% c("0-1", "1-2") | age %in% c("18-21", "22-24")))
 )
 ```
-First I thought it might had something to do with if they used ML at work. The easiest way to see if my hypothesis is right, is to disprove it. So I gave everyone that uses ML at work earns less than 50 thousand and is younger than 25 or has less than 3 years of experience a flag to disprove my hypothesis. Now if there was almost nobody that had this new flag then we could conclude that ML at work does in fact have something to do with it.
+First we thought it might had something to do with if they used ML at work. The easiest way to see if my hypothesis is right, is to disprove it. So we gave everyone that uses ML at work earns less than 50 thousand and is younger than 25 or has less than 3 years of experience a flag to disprove my hypothesis. Now if there was almost nobody that had this new flag then we could conclude that ML at work does in fact have something to do with it.
 ```{r data-explore}
 
 df$disporve_outlier_flag <- with(df, 
